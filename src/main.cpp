@@ -312,15 +312,15 @@ void fsmMoveServoUpAndDown() {
   //Remember no light or light in front = servo doesn't move
   //Light above = servo moves up
   //Light below = servo moves down
-  //Serial.print(steerRobotState); Serial.print("\t"); //uncomment for debugging
+  // Serial.print(moveServoState); Serial.print("\t"); //uncomment for debugging
   switch (moveServoState) {
     case 0: //light is not detected
       ActionServoMove = SERVO_MOVE_STOP;
       
       //State transition logic
-      if ( SensedLightUp == DETECTION_YES ) {
+      if ( SensedLightUp == DETECTION_YES && SensedLightDown == DETECTION_NO ) {
         moveServoState = 1; //if light above the robot, go to above state
-      } else if ( SensedLightDown == DETECTION_YES ) {
+      } else if ( SensedLightDown == DETECTION_YES && SensedLightUp == DETECTION_NO) {
         moveServoState = 2; //if light is below the robot, go to below state
       }
       break;
@@ -330,8 +330,8 @@ void fsmMoveServoUpAndDown() {
       ActionServoMove = SERVO_MOVE_UP;
       
       //State transition logic
-      if ( SensedLightDown == DETECTION_YES  || SensedLightUp == DETECTION_NO ) {
-        moveServoState = SERVO_MOVE_STOP; //if light is above and below, or no longer visible don't move
+      if ( (SensedLightDown == DETECTION_YES)  || (SensedLightUp == DETECTION_NO) ) {
+        moveServoState = 0; //if light is above and below, or no longer visible don't move
       }
 
       break;
@@ -341,8 +341,8 @@ void fsmMoveServoUpAndDown() {
       ActionServoMove = SERVO_MOVE_DOWN;
       
       //State transition logic
-      if ( SensedLightUp == DETECTION_YES  || SensedLightDown == DETECTION_NO ) {
-        moveServoState = SERVO_MOVE_STOP; //if light is above and below, or no longer visible don't move
+      if ( (SensedLightUp == DETECTION_YES)  || (SensedLightDown == DETECTION_NO) ) {
+        moveServoState = 0; //if light is above and below, or no longer visible don't move
       }
 
       break;
@@ -383,9 +383,11 @@ void MoveServo() {
       doTurnLedOff(LED_5);
       break;
     case SERVO_MOVE_UP:
+      doTurnLedOff(LED_5);
       doTurnLedOn(LED_1);
       break;
     case SERVO_MOVE_DOWN:
+      doTurnLedOff(LED_1);
       doTurnLedOn(LED_5);
       break;
   }
@@ -467,9 +469,11 @@ void RobotAction() {
       doTurnLedOff(LED_4);
       break;
     case DRIVE_LEFT:
+      doTurnLedOff(LED_4);
       doTurnLedOn(LED_2);
       break;
     case DRIVE_RIGHT:
+      doTurnLedOff(LED_2);
       doTurnLedOn(LED_4);
       break;
     case DRIVE_STRAIGHT:
