@@ -159,7 +159,7 @@ void setup() {
   pinMode(BUTTON_5, INPUT);
 
   // Battery sensor
-  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
   pinMode(10, OUTPUT);
   pinMode(11, OUTPUT);
   pinMode(12, OUTPUT);
@@ -193,9 +193,6 @@ float getPinVoltage(int pin) {
   //Why is (float) needed?
   //Why divide by 1024?
   //Why multiply by 5?
-  Serial.print("Voltage:\n");
-  Serial.print(5 * (float)analogRead(pin) / 1024);
-  Serial.print('\n');
   return 5 * (float)analogRead(pin) / 1024;
 }
 
@@ -583,13 +580,23 @@ void loop() {
   RobotAction(); // ACTION
   Serial.print("\n");
 
-  if(getPinVoltage(A0) > 4.0 ){
+  float voltage = getPinVoltage(A1);
+
+  Serial.print("Voltage:\n");
+  Serial.print(voltage);
+  Serial.print('\n');
+
+  if(getPinVoltage(A1) > 4.0 ){
     doTurnLedOn(10);
     doTurnLedOn(11);
     doTurnLedOn(12);
-  } else if(getPinVoltage(A0) > 2.0 ){
+  } else if(getPinVoltage(A1) > 3.0 ){
     doTurnLedOff(12);
     doTurnLedOn(11);
+    doTurnLedOn(10);
+  } else if (getPinVoltage(A1) > 2.0){
+    doTurnLedOff(12);
+    doTurnLedOff(11);
     doTurnLedOn(10);
   } else {
     doTurnLedOff(10);
