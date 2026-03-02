@@ -21,6 +21,7 @@
 /* These initial includes allow you to use necessary libraries for
 your sensors and servos. */
 #include <Arduino.h>
+#include <CapacitiveSensor.h>
 
 //
 // Compiler defines: the compiler replaces each name with its assignment
@@ -47,12 +48,17 @@ your sensors and servos. */
 
 
 // Motor enable pins - Lab 3
-// These will replace LEDs 2 and 4
+#define LEFT_MOTOR   5       // Left Motor
+#define RIGHT_MOTOR   3       // Right Motor
 
 // Photodiode pins - Lab 5
 // These will replace buttons 1, 2, 4, 5
 
 // Capacitive sensor pins - Lab 4
+#define CAP_SENSOR_SEND          10
+#define CAP_SENSOR_RECEIVE       11
+#define CAP_SENSOR_SAMPLES       40
+#define CAP_SENSOR_TAU_THRESHOLD 25
 
 
 // Ultrasonic sensor pin - Lab 6
@@ -121,7 +127,7 @@ int SensedLightUp = DETECTION_NO;
 int SensedLightDown = DETECTION_NO;
 
 // Capacitive sensor input (using Definitions) - Lab 4
-//int SensedCapacitiveTouch = DETECTION_NO;
+int SensedCapacitiveTouch = DETECTION_NO;
 
 
 /***********************************************************/
@@ -158,11 +164,15 @@ void setup() {
   pinMode(BUTTON_4, INPUT);
   pinMode(BUTTON_5, INPUT);
 
-  // Battery sensor
-  pinMode(A1, INPUT);
-  pinMode(10, OUTPUT);
-  pinMode(11, OUTPUT);
-  pinMode(12, OUTPUT);
+  // // Battery sensor
+  // pinMode(A1, INPUT);
+  // pinMode(10, OUTPUT);
+  // pinMode(11, OUTPUT);
+  // pinMode(12, OUTPUT);
+
+  // Capacitive Sensor
+  pinMode(CAP_SENSOR_RECEIVE, INPUT);
+  pinMode(CAP_SENSOR_SEND, OUTPUT);
 
   //Set up servo - Lab 6
 
@@ -233,8 +243,12 @@ bool isCollision() {
 // Function that detects if the capacitive sensor is being touched
 ////////////////////////////////////////////////////////////////////
 bool isCapacitiveSensorTouched() {
-  //In lab 4 you will add a capacitive sensor, and
-  // you will need to modify this function accordingly.
+  static CapacitiveSensor capacitive_sensor = CapacitiveSensor(CAP_SENSOR_SEND, CAP_SENSOR_RECEIVE);
+  if (capacitive_sensor.capacitiveSensor(CAP_SENSOR_SAMPLES) > CAP_SENSOR_TAU_THRESHOLD){
+    return true;
+  } else {
+    return false;
+  }
 }
 
 
@@ -564,7 +578,7 @@ void loop() {
     Serial.print(SensedCollision);
     Serial.print(SensedLightRight); 
     Serial.print(SensedLightDown);
-//    Serial.print(SensedCapacitiveTouch); - Lab 4
+    Serial.print(SensedCapacitiveTouch);
     Serial.print("\t");
   }
   
@@ -574,7 +588,7 @@ void loop() {
     Serial.print(ActionCollision);
     Serial.print(ActionRobotDrive); 
     Serial.print(ActionServoMove);
-    //    Serial.print(" "); Serial.print(ActionRobotSpeed); - Lab 4
+    Serial.print(" "); Serial.print(isCapacitiveSensorTouched()); // Serial.print(ActionRobotSpeed);
     Serial.print("\t");
   }
   RobotAction(); // ACTION
@@ -586,21 +600,21 @@ void loop() {
   Serial.print(voltage);
   Serial.print('\n');
 
-  if(getPinVoltage(A1) > 4.0 ){
-    doTurnLedOn(10);
-    doTurnLedOn(11);
-    doTurnLedOn(12);
-  } else if(getPinVoltage(A1) > 3.0 ){
-    doTurnLedOff(12);
-    doTurnLedOn(11);
-    doTurnLedOn(10);
-  } else if (getPinVoltage(A1) > 2.0){
-    doTurnLedOff(12);
-    doTurnLedOff(11);
-    doTurnLedOn(10);
-  } else {
-    doTurnLedOff(10);
-    doTurnLedOff(11);
-    doTurnLedOff(12);
-  }
+  // if(getPinVoltage(A1) > 4.0 ){
+  //   doTurnLedOn(10);
+  //   doTurnLedOn(11);
+  //   doTurnLedOn(12);
+  // } else if(getPinVoltage(A1) > 3.0 ){
+  //   doTurnLedOff(12);
+  //   doTurnLedOn(11);
+  //   doTurnLedOn(10);
+  // } else if (getPinVoltage(A1) > 2.0){
+  //   doTurnLedOff(12);
+  //   doTurnLedOff(11);
+  //   doTurnLedOn(10);
+  // } else {
+  //   doTurnLedOff(10);
+  //   doTurnLedOff(11);
+  //   doTurnLedOff(12);
+  // }
 }
