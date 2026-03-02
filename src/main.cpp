@@ -48,18 +48,17 @@ your sensors and servos. */
 
 
 // Motor enable pins - Lab 3
-#define LEFT_MOTOR   5       // Left Motor
+#define LEFT_MOTOR    5       // Left Motor
+#define H_BRIDGE_ENA  5
 #define RIGHT_MOTOR   3       // Right Motor
+#define H_BRIDGE_ENB  3
 
 // Photodiode pins - Lab 5
 // These will replace buttons 1, 2, 4, 5
 
 // Capacitive sensor pins - Lab 4
-#define CAP_SENSOR_SEND          10
-#define CAP_SENSOR_RECEIVE       11
-#define CAP_SENSOR_SAMPLES       40
-#define CAP_SENSOR_TAU_THRESHOLD 25
-
+#define CAP_SENSOR_SEND    10
+#define CAP_SENSOR_RECEIVE 11
 
 // Ultrasonic sensor pin - Lab 6
 // This will replace button 3 and LED 3 will no longer be needed
@@ -78,7 +77,8 @@ your sensors and servos. */
 
 
 // Number of samples that the capacitor sensor will use in a measurement - Lab 4
-
+#define CAP_SENSOR_SAMPLES       40
+#define CAP_SENSOR_TAU_THRESHOLD 25
 
 // Parameters for servo control as well as instantiation - Lab 6
 
@@ -97,6 +97,11 @@ your sensors and servos. */
 #define DETECTION_YES   1
 
 // Motor speed definitions - Lab 4
+#define SPEED_STOP      0
+#define SPEED_LOW       (int) (255 * 0.45)
+#define SPEED_MED       (int) (255 * 0.75)
+#define SPEED_HIGH      (int) (255 * 1)
+
 
 // Collision definitions
 #define COLLISION_ON   0
@@ -138,7 +143,7 @@ int ActionCollision = COLLISION_OFF;
 
 // Main motors Action (using Definitions)
 int ActionRobotDrive = DRIVE_STOP;
-// Add speed action in Lab 4
+int ActionRobotSpeed = SPEED_STOP;
 
 // Servo Action (using Definitions)
 int ActionServoMove =  SERVO_MOVE_STOP;
@@ -375,18 +380,40 @@ void fsmMoveServoUpAndDown() {
 }
 
 ////////////////////////////////////////////////////////////////////
+// State machine for cycling through the robot's speeds.
+////////////////////////////////////////////////////////////////////
+void fsmChangeSpeed() {
+  switch(ActionRobotSpeed){
+    case SPEED_STOP:
+      ActionRobotSpeed = SPEED_LOW;
+      break;
+    case SPEED_LOW:
+      ActionRobotSpeed = SPEED_MED;
+      break;
+    case SPEED_MED:
+      ActionRobotSpeed = SPEED_HIGH;
+      break;
+    case SPEED_HIGH:
+      ActionRobotSpeed = SPEED_STOP;
+      break;
+  }
+}
+
+////////////////////////////////////////////////////////////////////
 // State machine for detecting when the capacitive sensor is
 // touched, and changing the robot's speed.
 ////////////////////////////////////////////////////////////////////
 void fsmCapacitiveSensorSpeedControl() {
-  /*Implement in lab 4*/
-}
+  static bool sensor_touched = false;
 
-////////////////////////////////////////////////////////////////////
-// State machine for cycling through the robot's speeds.
-////////////////////////////////////////////////////////////////////
-void fsmChangeSpeed() {
-  /*Implement in lab 4*/
+  if (SensedCapacitiveTouch){
+    sensor_touched = true;
+  }
+
+  if (sensor_touched && !SensedCapacitiveTouch){
+    fsmChangeSpeed();
+    sensor_touched = false;
+  }
 }
 
 
@@ -462,6 +489,12 @@ void RobotPerception() {
    } else {
     SensedCollision = DETECTION_NO;
    }
+
+   if (isCapacitiveSensorTouched()){
+    SensedCapacitiveTouch = DETECTION_YES;
+   } else {
+    SensedCapacitiveTouch = DETECTION_NO;
+   }
 }
 
 /**********************************************************************************************************
@@ -485,20 +518,20 @@ void RobotAction() {
   // This drives the main motors on the robot
   switch(ActionRobotDrive) {
     case DRIVE_STOP:
-      doTurnLedOff(LED_2);
-      doTurnLedOff(LED_4);
-      break;
-    case DRIVE_LEFT:
-      doTurnLedOff(LED_4);
-      doTurnLedOn(LED_2);
-      break;
-    case DRIVE_RIGHT:
-      doTurnLedOff(LED_2);
-      doTurnLedOn(LED_4);
+      analogWrite(H_BRIDGE_ENA, 0);
+      analogWrite(H_BRIDGE_ENB, 0);
       break;
     case DRIVE_STRAIGHT:
-      doTurnLedOn(LED_2);
-      doTurnLedOn(LED_4);
+      analogWrite(H_BRIDGE_ENA, ActionRobotSpeed);
+      analogWrite(H_BRIDGE_ENB, ActionRobotSpeed);
+      break;
+    case DRIVE_RIGHT:
+      analogWrite(H_BRIDGE_ENA, 0);
+      analogWrite(H_BRIDGE_ENB, ActionRobotSpeed);
+      break;
+    case DRIVE_LEFT:
+      analogWrite(H_BRIDGE_ENA, ActionRobotSpeed);
+      analogWrite(H_BRIDGE_ENB, 0);
       break;
   }
   
@@ -556,7 +589,7 @@ void RobotPlanning(void) {
   // based on the sensing from the Perception stage.
   fsmCollisionDetection(); // Milestone 1
   fsmMoveServoUpAndDown(); // Milestone 3
-  // Add Speed Control State Machine in lab 4
+  fsmCapacitiveSensorSpeedControl(); // lab 4
 }
 
 
@@ -568,7 +601,7 @@ void loop() {
   // This DebugStateOutput flag can be used to easily turn on the
   // serial debugging to know what the robot is perceiving and what
   // actions the robot wants to take.
-  int DebugStateOutput = false; // Change false to true to debug
+  int DebugStateOutput = true; // Change false to true to debug
   
   RobotPerception(); // PERCEPTION
   if (DebugStateOutput) {
@@ -588,17 +621,17 @@ void loop() {
     Serial.print(ActionCollision);
     Serial.print(ActionRobotDrive); 
     Serial.print(ActionServoMove);
-    Serial.print(" "); Serial.print(isCapacitiveSensorTouched()); // Serial.print(ActionRobotSpeed);
+    Serial.print(" "); Serial.print(ActionRobotSpeed);
     Serial.print("\t");
   }
   RobotAction(); // ACTION
   Serial.print("\n");
 
-  float voltage = getPinVoltage(A1);
+  // float voltage = getPinVoltage(A1);
 
-  Serial.print("Voltage:\n");
-  Serial.print(voltage);
-  Serial.print('\n');
+  // Serial.print("Voltage:\n");
+  // Serial.print(voltage);
+  // Serial.print('\n');
 
   // if(getPinVoltage(A1) > 4.0 ){
   //   doTurnLedOn(10);
