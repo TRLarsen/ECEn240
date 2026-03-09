@@ -74,7 +74,7 @@ your sensors and servos. */
 #define BUTTON_THRESHOLD 2.5
 
 // Voltage at which a photodiode voltage is considered to be present - Lab 5
-
+#define PHOTODIODE_LIGHT_THRESHOLD 3
 
 // Number of samples that the capacitor sensor will use in a measurement - Lab 4
 #define CAP_SENSOR_SAMPLES       40
@@ -255,6 +255,16 @@ bool isCapacitiveSensorTouched() {
     return false;
   }
 }
+
+////////////////////////////////////////////////////////////////////
+// Function that detects if light is present
+////////////////////////////////////////////////////////////////////
+bool isLight(int pin) {
+  float light = getPinVoltage(pin);
+  // Serial.println(light); // Use this line to test
+  return (light > PHOTODIODE_LIGHT_THRESHOLD);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////
@@ -478,10 +488,6 @@ void RobotPerception() {
   } else {
     SensedLightDown = DETECTION_NO;
   }
-  
-
-   // Capacitive Sensor
-   /*Add code in lab 4*/
 
    // Collision Sensor
    if (isCollision()) {   // Add code in isCollision() function for lab 2 milestone 1
@@ -490,6 +496,7 @@ void RobotPerception() {
     SensedCollision = DETECTION_NO;
    }
 
+   // Capacitive Sensor
    if (isCapacitiveSensorTouched()){
     SensedCapacitiveTouch = DETECTION_YES;
    } else {
@@ -598,56 +605,58 @@ void RobotPlanning(void) {
   power off or reset. - Notice: PERCEPTION, PLANNING, ACTION
  ********************************************************************/
 void loop() {
-  // This DebugStateOutput flag can be used to easily turn on the
-  // serial debugging to know what the robot is perceiving and what
-  // actions the robot wants to take.
-  int DebugStateOutput = true; // Change false to true to debug
+  // // This DebugStateOutput flag can be used to easily turn on the
+  // // serial debugging to know what the robot is perceiving and what
+  // // actions the robot wants to take.
+  // int DebugStateOutput = false; // Change false to true to debug
   
-  RobotPerception(); // PERCEPTION
-  if (DebugStateOutput) {
-    Serial.print("Perception:");
-    Serial.print(SensedLightUp);
-    Serial.print(SensedLightLeft);
-    Serial.print(SensedCollision);
-    Serial.print(SensedLightRight); 
-    Serial.print(SensedLightDown);
-    Serial.print(SensedCapacitiveTouch);
-    Serial.print("\t");
-  }
-  
-  RobotPlanning(); // PLANNING
-  if (DebugStateOutput) {
-    Serial.print(" Action:");
-    Serial.print(ActionCollision);
-    Serial.print(ActionRobotDrive); 
-    Serial.print(ActionServoMove);
-    Serial.print(" "); Serial.print(ActionRobotSpeed);
-    Serial.print("\t");
-  }
-  RobotAction(); // ACTION
-  Serial.print("\n");
-
-  // float voltage = getPinVoltage(A1);
-
-  // Serial.print("Voltage:\n");
-  // Serial.print(voltage);
-  // Serial.print('\n');
-
-  // if(getPinVoltage(A1) > 4.0 ){
-  //   doTurnLedOn(10);
-  //   doTurnLedOn(11);
-  //   doTurnLedOn(12);
-  // } else if(getPinVoltage(A1) > 3.0 ){
-  //   doTurnLedOff(12);
-  //   doTurnLedOn(11);
-  //   doTurnLedOn(10);
-  // } else if (getPinVoltage(A1) > 2.0){
-  //   doTurnLedOff(12);
-  //   doTurnLedOff(11);
-  //   doTurnLedOn(10);
-  // } else {
-  //   doTurnLedOff(10);
-  //   doTurnLedOff(11);
-  //   doTurnLedOff(12);
+  // RobotPerception(); // PERCEPTION
+  // if (DebugStateOutput) {
+  //   Serial.print("Perception:");
+  //   Serial.print(SensedLightUp);
+  //   Serial.print(SensedLightLeft);
+  //   Serial.print(SensedCollision);
+  //   Serial.print(SensedLightRight); 
+  //   Serial.print(SensedLightDown);
+  //   Serial.print(SensedCapacitiveTouch);
+  //   Serial.print("\t");
   // }
+  
+  // RobotPlanning(); // PLANNING
+  // if (DebugStateOutput) {
+  //   Serial.print(" Action:");
+  //   Serial.print(ActionCollision);
+  //   Serial.print(ActionRobotDrive); 
+  //   Serial.print(ActionServoMove);
+  //   Serial.print(" "); Serial.print(ActionRobotSpeed);
+  //   Serial.print("\t");
+  // }
+  // RobotAction(); // ACTION
+  // Serial.print("\n");
+
+  // // float voltage = getPinVoltage(A1);
+
+  // // Serial.print("Voltage:\n");
+  // // Serial.print(voltage);
+  // // Serial.print('\n');
+
+  // // if(getPinVoltage(A1) > 4.0 ){
+  // //   doTurnLedOn(10);
+  // //   doTurnLedOn(11);
+  // //   doTurnLedOn(12);
+  // // } else if(getPinVoltage(A1) > 3.0 ){
+  // //   doTurnLedOff(12);
+  // //   doTurnLedOn(11);
+  // //   doTurnLedOn(10);
+  // // } else if (getPinVoltage(A1) > 2.0){
+  // //   doTurnLedOff(12);
+  // //   doTurnLedOff(11);
+  // //   doTurnLedOn(10);
+  // // } else {
+  // //   doTurnLedOff(10);
+  // //   doTurnLedOff(11);
+  // //   doTurnLedOff(12);
+  // // }
+
+  Serial.println(isLight(A0));
 }
