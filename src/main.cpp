@@ -33,11 +33,11 @@ your sensors and servos. */
 // Replace the pin numbers with those you connect to your robot
 
 // Button pins. These will be replaced with the photodiode variables in lab 5
-#define BUTTON_1  A2     // Far left Button - Servo Up
-#define BUTTON_2  A3     // Left middle button - Left Motor
+#define PHOTODIODE_1  A2     // Far left Button - Servo Up
+#define PHOTODIODE_2  A3     // Left middle button - Left Motor
 #define BUTTON_3  A4     // Middle Button - Collision
-#define BUTTON_4  A5     // Right middle button - Right Motor
-#define BUTTON_5  A6     // Far right button - Servo Down
+#define PHOTODIODE_3  A5     // Right middle button - Right Motor
+#define PHOTODIODE_4  A6     // Far right button - Servo Down
 
 // LED pins (note that digital pins do not need "D" in front of them)
 #define LED_1   6       // Far Left LED - Servo Up
@@ -57,7 +57,7 @@ your sensors and servos. */
 // These will replace buttons 1, 2, 4, 5
 
 // Capacitive sensor pins - Lab 4
-#define CAP_SENSOR_SEND    10
+#define CAP_SENSOR_SEND    12
 #define CAP_SENSOR_RECEIVE 11
 
 // Ultrasonic sensor pin - Lab 6
@@ -74,7 +74,7 @@ your sensors and servos. */
 #define BUTTON_THRESHOLD 2.5
 
 // Voltage at which a photodiode voltage is considered to be present - Lab 5
-
+#define PHOTODIODE_LIGHT_THRESHOLD 3
 
 // Number of samples that the capacitor sensor will use in a measurement - Lab 4
 #define CAP_SENSOR_SAMPLES       40
@@ -163,11 +163,11 @@ void setup() {
   pinMode(LED_5, OUTPUT);
   
   //Set up input pins
-  pinMode(BUTTON_1, INPUT);
-  pinMode(BUTTON_2, INPUT);
+  pinMode(PHOTODIODE_1, INPUT);
+  pinMode(PHOTODIODE_2, INPUT);
   pinMode(BUTTON_3, INPUT);
-  pinMode(BUTTON_4, INPUT);
-  pinMode(BUTTON_5, INPUT);
+  pinMode(PHOTODIODE_3, INPUT);
+  pinMode(PHOTODIODE_4, INPUT);
 
   // // Battery sensor
   // pinMode(A1, INPUT);
@@ -255,6 +255,16 @@ bool isCapacitiveSensorTouched() {
     return false;
   }
 }
+
+////////////////////////////////////////////////////////////////////
+// Function that detects if light is present
+////////////////////////////////////////////////////////////////////
+bool isLight(int pin) {
+  float light = getPinVoltage(pin);
+  // Serial.println(light); // Use this line to test
+  return (light > PHOTODIODE_LIGHT_THRESHOLD);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////
@@ -453,13 +463,13 @@ void RobotPerception() {
   // Photodiode Sensing
   //Serial.print(getPinVoltage(BUTTON_2)); Serial.print("\t"); //uncomment for debugging
   
-  if (isButtonPushed(BUTTON_2)){
+  if (isLight(PHOTODIODE_2)){
     SensedLightLeft = DETECTION_YES;
   } else {
     SensedLightLeft = DETECTION_NO;
   }
   // Remember, you can find the buttons and which one goes to what towards the top of the file
-  if (isButtonPushed(BUTTON_4)) { 
+  if (isLight(PHOTODIODE_3)) { 
     SensedLightRight = DETECTION_YES;
   } else {
     SensedLightRight = DETECTION_NO;
@@ -467,21 +477,17 @@ void RobotPerception() {
 
       
   /* Add code to detect if light is up or down. Lab 2 milestone 3*/
-  if (isButtonPushed(BUTTON_1)){
+  if (isLight(PHOTODIODE_1)){
     SensedLightUp = DETECTION_YES;
   } else {
     SensedLightUp = DETECTION_NO;
   }
   // Remember, you can find the buttons and which one goes to what towards the top of the file
-  if (isButtonPushed(BUTTON_5)) { 
+  if (isLight(PHOTODIODE_4)) { 
     SensedLightDown = DETECTION_YES;
   } else {
     SensedLightDown = DETECTION_NO;
   }
-  
-
-   // Capacitive Sensor
-   /*Add code in lab 4*/
 
    // Collision Sensor
    if (isCollision()) {   // Add code in isCollision() function for lab 2 milestone 1
@@ -490,6 +496,7 @@ void RobotPerception() {
     SensedCollision = DETECTION_NO;
    }
 
+   // Capacitive Sensor
    if (isCapacitiveSensorTouched()){
     SensedCapacitiveTouch = DETECTION_YES;
    } else {
@@ -601,7 +608,7 @@ void loop() {
   // This DebugStateOutput flag can be used to easily turn on the
   // serial debugging to know what the robot is perceiving and what
   // actions the robot wants to take.
-  int DebugStateOutput = true; // Change false to true to debug
+  int DebugStateOutput = false; // Change false to true to debug
   
   RobotPerception(); // PERCEPTION
   if (DebugStateOutput) {
@@ -613,6 +620,19 @@ void loop() {
     Serial.print(SensedLightDown);
     Serial.print(SensedCapacitiveTouch);
     Serial.print("\t");
+    
+    if (isLight(PHOTODIODE_1)){
+      Serial.println("PHOTODIODE_1");
+    }
+    if (isLight(PHOTODIODE_2)){
+      Serial.println("PHOTODIODE_2");
+    }
+    if (isLight(PHOTODIODE_3)){
+      Serial.println("PHOTODIODE_3");
+    }
+    if (isLight(PHOTODIODE_4)){
+      Serial.println("PHOTODIODE_4");
+    }
   }
   
   RobotPlanning(); // PLANNING
