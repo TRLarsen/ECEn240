@@ -22,6 +22,7 @@
 your sensors and servos. */
 #include <Arduino.h>
 #include <CapacitiveSensor.h>
+#include <Servo.h>  // loads the Servo library
 #include <NewPing.h>
 
 //
@@ -67,7 +68,7 @@ your sensors and servos. */
 #define ECHO_PIN 9  // Arduino pin tied to echo pin on the ultrasonic sensor.
 
 // Servo pin - Lab 6
-// This will replace LEDs 1 and 5
+#define SERVO_PIN 10
 
 /***********************************************************/
 // Configuration parameter definitions
@@ -84,7 +85,10 @@ your sensors and servos. */
 #define CAP_SENSOR_TAU_THRESHOLD 25
 
 // Parameters for servo control as well as instantiation - Lab 6
-
+#define SERVO_START_ANGLE 90
+#define SERVO_UP_LIMIT 180
+#define SERVO_DOWN_LIMIT 0
+static Servo myServo;
 
 // Parameters for ultrasonic sensor and instantiation - Lab 6
 // Maximum distance we want to ping for (in centimeters). 
@@ -95,7 +99,7 @@ your sensors and servos. */
 static NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 
 // Parameter to define when the ultrasonic sensor detects a collision - Lab 6
-
+#define COLLISION_DISTANCE 10
 
 
 /***********************************************************/
@@ -188,6 +192,8 @@ void setup() {
   pinMode(CAP_SENSOR_SEND, OUTPUT);
 
   //Set up servo - Lab 6
+  myServo.attach(SERVO_PIN);
+  myServo.write(SERVO_START_ANGLE);
 
   // Ultrasonic Sensor
   pinMode(TRIGGER_PIN, OUTPUT); // pulse sent out through TRIGGER_PIN    
@@ -246,7 +252,7 @@ bool isCollision() {
   int sonar_distance = sonar.ping_cm(); // If the distance is too big, it returns 0.
   Serial.println(sonar_distance);
   if(sonar_distance != 0){ 
-    return (sonar_distance < 10);
+    return (sonar_distance < COLLISION_DISTANCE);
   } else {
 	  return false;
   }
@@ -439,24 +445,45 @@ void fsmCapacitiveSensorSpeedControl() {
 ////////////////////////////////////////////////////////////////////
 // Function that causes the servo to move up or down.
 ////////////////////////////////////////////////////////////////////
+// void MoveServo() {
+//   // Note that there needs to be some logic in the action of moving
+//   // the servo so that it does not exceed its range
+//   /* Add CurrentServoAngle in lab 6 */
+//   switch(ActionServoMove) {
+//     case SERVO_MOVE_STOP:
+//       doTurnLedOff(LED_1);
+//       doTurnLedOff(LED_5);
+//       break;
+//     case SERVO_MOVE_UP:
+//       doTurnLedOff(LED_5);
+//       doTurnLedOn(LED_1);
+//       break;
+//     case SERVO_MOVE_DOWN:
+//       doTurnLedOff(LED_1);
+//       doTurnLedOn(LED_5);
+//       break;
+//   }
+// }
 void MoveServo() {
-  // Note that there needs to be some logic in the action of moving
-  // the servo so that it does not exceed its range
-  /* Add CurrentServoAngle in lab 6 */
-  switch(ActionServoMove) {
+    static int servoAngle = SERVO_START_ANGLE;
+    // Serial.println(servoAngle);
+    
+    switch(ActionServoMove) {
+    case SERVO_MOVE_UP: // servo moving in positive direction
+      if(servoAngle != SERVO_UP_LIMIT) {
+        servoAngle++;
+      }
+      break;
+    case SERVO_MOVE_DOWN: // servo moving in negative direction
+      if(servoAngle != SERVO_DOWN_LIMIT) {
+        servoAngle--;
+      }
+      break;
     case SERVO_MOVE_STOP:
-      doTurnLedOff(LED_1);
-      doTurnLedOff(LED_5);
-      break;
-    case SERVO_MOVE_UP:
-      doTurnLedOff(LED_5);
-      doTurnLedOn(LED_1);
-      break;
-    case SERVO_MOVE_DOWN:
-      doTurnLedOff(LED_1);
-      doTurnLedOn(LED_5);
       break;
   }
+  myServo.write(servoAngle); // send angle to the servo 
+  // the .write() function expects an integer between 0 and 180 degrees
 }
 
 
@@ -755,7 +782,7 @@ void loop() {
 //   MoveServo(); // state machine to move servo back and forth
 // }
 
-// // ========================================= ULTRASONIC SENSOR ==========================================
+// // ========================================= ULTRASONIC SENSOR =========================================
 
 // #include "Arduino.h"
 // #define TRIGGER_PIN 8
