@@ -35,11 +35,11 @@ your sensors and servos. */
 // Replace the pin numbers with those you connect to your robot
 
 // Button pins. These will be replaced with the photodiode variables in lab 5
-#define PHOTODIODE_1  A2     // Far left Button - Servo Up
-#define PHOTODIODE_2  A3     // Left middle button - Left Motor
+#define BOTTOM_OUTSIDE_PHOTODIODE  A2     // bottom outside
+#define UPPER_INSIDE_PHOTODIODE  A3     // upper inside
 #define BUTTON_3  A4     // Middle Button - Collision
-#define PHOTODIODE_3  A5     // Right middle button - Right Motor
-#define PHOTODIODE_4  A6     // Far right button - Servo Down
+#define UPPER_OUTSIDE_PHOTODIODE  A5     // upper outside
+#define BOTTOM_INSIDE_PHOTODIODE  A6     // bottom inside
 
 // LED pins (note that digital pins do not need "D" in front of them)
 #define LED_1   6       // Far Left LED - Servo Up
@@ -59,8 +59,8 @@ your sensors and servos. */
 // These will replace buttons 1, 2, 4, 5
 
 // Capacitive sensor pins - Lab 4
-#define CAP_SENSOR_SEND    12
-#define CAP_SENSOR_RECEIVE 11
+#define CAP_SENSOR_SEND    4
+#define CAP_SENSOR_RECEIVE 7
 
 // Ultrasonic sensor pin - Lab 6
 // This will replace button 3 and LED 3 will no longer be needed
@@ -82,12 +82,13 @@ your sensors and servos. */
 
 // Number of samples that the capacitor sensor will use in a measurement - Lab 4
 #define CAP_SENSOR_SAMPLES       40
-#define CAP_SENSOR_TAU_THRESHOLD 25
+#define CAP_SENSOR_TAU_THRESHOLD 35
 
 // Parameters for servo control as well as instantiation - Lab 6
+// Note that the a lower angle is towards the back of the robot
 #define SERVO_START_ANGLE 90
-#define SERVO_UP_LIMIT 180
-#define SERVO_DOWN_LIMIT 0
+#define SERVO_UP_LIMIT 100
+#define SERVO_DOWN_LIMIT 60
 static Servo myServo;
 
 // Parameters for ultrasonic sensor and instantiation - Lab 6
@@ -99,7 +100,7 @@ static Servo myServo;
 static NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 
 // Parameter to define when the ultrasonic sensor detects a collision - Lab 6
-#define COLLISION_DISTANCE 10
+#define COLLISION_DISTANCE 20
 
 
 /***********************************************************/
@@ -175,11 +176,11 @@ void setup() {
   pinMode(LED_5, OUTPUT);
   
   //Set up input pins
-  pinMode(PHOTODIODE_1, INPUT);
-  pinMode(PHOTODIODE_2, INPUT);
+  pinMode(BOTTOM_OUTSIDE_PHOTODIODE, INPUT);
+  pinMode(UPPER_INSIDE_PHOTODIODE, INPUT);
   pinMode(BUTTON_3, INPUT);
-  pinMode(PHOTODIODE_3, INPUT);
-  pinMode(PHOTODIODE_4, INPUT);
+  pinMode(UPPER_OUTSIDE_PHOTODIODE, INPUT);
+  pinMode(BOTTOM_INSIDE_PHOTODIODE, INPUT);
 
   // // Battery sensor
   // pinMode(A1, INPUT);
@@ -353,6 +354,7 @@ void fsmSteerRobot() {
 // and moving the servo accordingly.
 ////////////////////////////////////////////////////////////////////
 void fsmMoveServoUpAndDown() {
+  // Note that the a lower angle is towards the back of the robot
   static int moveServoState = 0;
   //Serial.print(moveServoState); Serial.print("\t"); //uncomment for debugging
   
@@ -470,13 +472,13 @@ void MoveServo() {
     
     switch(ActionServoMove) {
     case SERVO_MOVE_UP: // servo moving in positive direction
-      if(servoAngle != SERVO_UP_LIMIT) {
-        servoAngle++;
+      if(servoAngle >= SERVO_DOWN_LIMIT) {
+        servoAngle--;
       }
       break;
     case SERVO_MOVE_DOWN: // servo moving in negative direction
-      if(servoAngle != SERVO_DOWN_LIMIT) {
-        servoAngle--;
+      if(servoAngle <= SERVO_UP_LIMIT) {
+        servoAngle++;
       }
       break;
     case SERVO_MOVE_STOP:
@@ -499,13 +501,13 @@ void RobotPerception() {
   // Photodiode Sensing
   //Serial.print(getPinVoltage(BUTTON_2)); Serial.print("\t"); //uncomment for debugging
   
-  if (isLight(PHOTODIODE_2)){
+  if (isLight(UPPER_INSIDE_PHOTODIODE) && isLight(BOTTOM_INSIDE_PHOTODIODE)){
     SensedLightLeft = DETECTION_YES;
   } else {
     SensedLightLeft = DETECTION_NO;
   }
   // Remember, you can find the buttons and which one goes to what towards the top of the file
-  if (isLight(PHOTODIODE_3)) { 
+  if (isLight(UPPER_OUTSIDE_PHOTODIODE) && isLight(BOTTOM_OUTSIDE_PHOTODIODE)) { 
     SensedLightRight = DETECTION_YES;
   } else {
     SensedLightRight = DETECTION_NO;
@@ -513,13 +515,13 @@ void RobotPerception() {
 
       
   /* Add code to detect if light is up or down. Lab 2 milestone 3*/
-  if (isLight(PHOTODIODE_1)){
+  if (isLight(UPPER_INSIDE_PHOTODIODE) && isLight(UPPER_OUTSIDE_PHOTODIODE)){
     SensedLightUp = DETECTION_YES;
   } else {
     SensedLightUp = DETECTION_NO;
   }
   // Remember, you can find the buttons and which one goes to what towards the top of the file
-  if (isLight(PHOTODIODE_4)) { 
+  if (isLight(BOTTOM_INSIDE_PHOTODIODE) && isLight(BOTTOM_OUTSIDE_PHOTODIODE)) { 
     SensedLightDown = DETECTION_YES;
   } else {
     SensedLightDown = DETECTION_NO;
@@ -549,12 +551,16 @@ void RobotAction() {
   // This turns the collision LED on and off
   switch(ActionCollision) {
     case COLLISION_OFF:
-      doTurnLedOff(LED_3); //Collision LED off - DON'T FORGET TO ADD CODE TO doTurnLedOff() 
+      // doTurnLedOff(LED_3); //Collision LED off - DON'T FORGET TO ADD CODE TO doTurnLedOff() 
                            // AND doTurnLedOn() OR ELSE YOUR LEDS WON'T WORK!!!
       break;
     case COLLISION_ON:
-      doTurnLedOn(LED_3);
-      ActionRobotDrive = DRIVE_STOP;
+      // doTurnLedOn(LED_3);
+      // for(int i; i < (ActionRobotSpeed); i++){
+      //   analogWrite(H_BRIDGE_ENA, 0);
+      //   analogWrite(H_BRIDGE_ENB, ActionRobotSpeed);
+      // }
+      ActionRobotDrive = DRIVE_RIGHT;
       break;
   }
   
@@ -657,17 +663,17 @@ void loop() {
     Serial.print(SensedCapacitiveTouch);
     Serial.print("\t");
     
-    if (isLight(PHOTODIODE_1)){
-      Serial.println("PHOTODIODE_1");
+    if (isLight(BOTTOM_OUTSIDE_PHOTODIODE)){
+      Serial.println("BOTTOM_OUTSIDE_PHOTODIODE");
     }
-    if (isLight(PHOTODIODE_2)){
-      Serial.println("PHOTODIODE_2");
+    if (isLight(UPPER_INSIDE_PHOTODIODE)){
+      Serial.println("UPPER_INSIDE_PHOTODIODE");
     }
-    if (isLight(PHOTODIODE_3)){
-      Serial.println("PHOTODIODE_3");
+    if (isLight(UPPER_OUTSIDE_PHOTODIODE)){
+      Serial.println("UPPER_OUTSIDE_PHOTODIODE");
     }
-    if (isLight(PHOTODIODE_4)){
-      Serial.println("PHOTODIODE_4");
+    if (isLight(BOTTOM_INSIDE_PHOTODIODE)){
+      Serial.println("BOTTOM_INSIDE_PHOTODIODE");
     }
   }
   
