@@ -37,21 +37,23 @@ your sensors and servos. */
 // Button pins. These will be replaced with the photodiode variables in lab 5
 #define BOTTOM_OUTSIDE_PHOTODIODE  A2     // bottom outside
 #define UPPER_INSIDE_PHOTODIODE  A3     // upper inside
-#define BUTTON_3  A4     // Middle Button - Collision
+// #define BUTTON_3  A4     // Middle Button - Collision
 #define UPPER_OUTSIDE_PHOTODIODE  A5     // upper outside
 #define BOTTOM_INSIDE_PHOTODIODE  A6     // bottom inside
 
 // LED pins (note that digital pins do not need "D" in front of them)
-#define LED_1   6       // Far Left LED - Servo Up
-#define LED_2   5       // Left Middle LED  - Left Motor
-#define LED_3   4       // Middle LED - Collision
-#define LED_4   3       // Right Middle LED - Right Motor
-#define LED_5   2       // Far Right LED - Servo Down
-
+// #define LED_1   6       // Far Left LED - Servo Up
+// #define LED_2   5       // Left Middle LED  - Left Motor
+// #define LED_3   4       // Middle LED - Collision
+// #define LED_4   3       // Right Middle LED - Right Motor
+// #define LED_5   2       // Far Right LED - Servo Down
+#define RED_PIN 9
+#define GREEN_PIN 10
+#define BLUE_PIN 11
 
 // Motor enable pins - Lab 3
-#define LEFT_MOTOR    5       // Left Motor
 #define H_BRIDGE_ENA  5
+#define LEFT_MOTOR    5       // Left Motor
 #define RIGHT_MOTOR   3       // Right Motor
 #define H_BRIDGE_ENB  3
 
@@ -60,15 +62,15 @@ your sensors and servos. */
 
 // Capacitive sensor pins - Lab 4
 #define CAP_SENSOR_SEND    4
-#define CAP_SENSOR_RECEIVE 7
+#define CAP_SENSOR_RECEIVE 2
 
 // Ultrasonic sensor pin - Lab 6
 // This will replace button 3 and LED 3 will no longer be needed
-#define TRIGGER_PIN 8  // Arduino pin tied to trigger pin on the ultrasonic sensor.
-#define ECHO_PIN 9  // Arduino pin tied to echo pin on the ultrasonic sensor.
+#define TRIGGER_PIN 7  // Arduino pin tied to trigger pin on the ultrasonic sensor.
+#define ECHO_PIN 8  // Arduino pin tied to echo pin on the ultrasonic sensor.
 
 // Servo pin - Lab 6
-#define SERVO_PIN 10
+#define SERVO_PIN 6
 
 /***********************************************************/
 // Configuration parameter definitions
@@ -143,6 +145,7 @@ int SensedLightRight = DETECTION_NO;
 int SensedLightLeft = DETECTION_NO;
 int SensedLightUp = DETECTION_NO;
 int SensedLightDown = DETECTION_NO;
+int SensedLight = DETECTION_NO;
 
 // Capacitive sensor input (using Definitions) - Lab 4
 int SensedCapacitiveTouch = DETECTION_NO;
@@ -161,6 +164,13 @@ int ActionRobotSpeed = SPEED_STOP;
 // Servo Action (using Definitions)
 int ActionServoMove =  SERVO_MOVE_STOP;
 
+// Struct defining what RGB LED PWM values to write
+struct RGB {
+  uint8_t redPwm = 0;
+  uint8_t greenPwm = 0;
+  uint8_t bluePwm = 0;
+} rgbVals;
+
 /********************************************************************
   SETUP function - this gets executed at power up, or after a reset
  ********************************************************************/
@@ -169,18 +179,28 @@ void setup() {
   Serial.begin(9600);
   
   //Set up output pins
-  pinMode(LED_1, OUTPUT);
-  pinMode(LED_2, OUTPUT);
-  pinMode(LED_3, OUTPUT);
-  pinMode(LED_4, OUTPUT);
-  pinMode(LED_5, OUTPUT);
+  pinMode(SERVO_PIN, OUTPUT);
+  pinMode(LEFT_MOTOR, OUTPUT);
+  pinMode(RIGHT_MOTOR, OUTPUT);
+  pinMode(CAP_SENSOR_SEND, OUTPUT);
+  pinMode(RED_PIN, OUTPUT);
+  pinMode(GREEN_PIN, OUTPUT);
+  pinMode(BLUE_PIN, OUTPUT);
   
   //Set up input pins
   pinMode(BOTTOM_OUTSIDE_PHOTODIODE, INPUT);
   pinMode(UPPER_INSIDE_PHOTODIODE, INPUT);
-  pinMode(BUTTON_3, INPUT);
+  // pinMode(BUTTON_3, INPUT);
   pinMode(UPPER_OUTSIDE_PHOTODIODE, INPUT);
   pinMode(BOTTOM_INSIDE_PHOTODIODE, INPUT);
+
+  // Capacitive Sensor
+  pinMode(CAP_SENSOR_RECEIVE, INPUT);
+  pinMode(CAP_SENSOR_SEND, OUTPUT);
+
+  // Ultrasonic Sensor
+  pinMode(TRIGGER_PIN, OUTPUT); // pulse sent out through TRIGGER_PIN    
+  pinMode(ECHO_PIN, INPUT); // return signal read through ECHO_PIN
 
   // // Battery sensor
   // pinMode(A1, INPUT);
@@ -188,17 +208,9 @@ void setup() {
   // pinMode(11, OUTPUT);
   // pinMode(12, OUTPUT);
 
-  // Capacitive Sensor
-  pinMode(CAP_SENSOR_RECEIVE, INPUT);
-  pinMode(CAP_SENSOR_SEND, OUTPUT);
-
   //Set up servo - Lab 6
   myServo.attach(SERVO_PIN);
   myServo.write(SERVO_START_ANGLE);
-
-  // Ultrasonic Sensor
-  pinMode(TRIGGER_PIN, OUTPUT); // pulse sent out through TRIGGER_PIN    
-  pinMode(ECHO_PIN, INPUT); // return signal read through ECHO_PIN
 }
 
 /**********************************************************************************************************
@@ -245,7 +257,6 @@ bool isButtonPushed(int button_pin) {
   }
 }
 
-
 ////////////////////////////////////////////////////////////////////
 // Function that detects if there is an obstacle in front of robot
 ////////////////////////////////////////////////////////////////////
@@ -281,8 +292,6 @@ bool isLight(int pin) {
   return (light > PHOTODIODE_LIGHT_THRESHOLD);
 }
 
-
-
 ////////////////////////////////////////////////////////////////////
 // State machine for detecting if light is to the right or left,
 // and steering the robot accordingly.
@@ -293,7 +302,11 @@ void fsmSteerRobot() {
 
   switch (steerRobotState) {
     case 0: //light is not detected
-      ActionRobotDrive = DRIVE_STOP;
+      if(ActionRobotDrive != DRIVE_STOP){
+        ActionRobotDrive = DRIVE_STOP;
+      } else {
+        ActionRobotDrive = DRIVE_STOP;
+      }
       
       //State transition logic
       if ( SensedLightLeft == DETECTION_YES ) {
@@ -443,29 +456,9 @@ void fsmCapacitiveSensorSpeedControl() {
   }
 }
 
-
 ////////////////////////////////////////////////////////////////////
 // Function that causes the servo to move up or down.
 ////////////////////////////////////////////////////////////////////
-// void MoveServo() {
-//   // Note that there needs to be some logic in the action of moving
-//   // the servo so that it does not exceed its range
-//   /* Add CurrentServoAngle in lab 6 */
-//   switch(ActionServoMove) {
-//     case SERVO_MOVE_STOP:
-//       doTurnLedOff(LED_1);
-//       doTurnLedOff(LED_5);
-//       break;
-//     case SERVO_MOVE_UP:
-//       doTurnLedOff(LED_5);
-//       doTurnLedOn(LED_1);
-//       break;
-//     case SERVO_MOVE_DOWN:
-//       doTurnLedOff(LED_1);
-//       doTurnLedOn(LED_5);
-//       break;
-//   }
-// }
 void MoveServo() {
     static int servoAngle = SERVO_START_ANGLE;
     // Serial.println(servoAngle);
@@ -488,6 +481,14 @@ void MoveServo() {
   // the .write() function expects an integer between 0 and 180 degrees
 }
 
+////////////////////////////////////////////////////////////////////
+// Function that writes the pre-planned RGB values to the RGB LED.
+////////////////////////////////////////////////////////////////////
+void updateRgbLed(){
+  digitalWrite(RED_PIN, rgbVals.redPwm);
+  digitalWrite(GREEN_PIN, rgbVals.greenPwm);
+  digitalWrite(BLUE_PIN, rgbVals.bluePwm);
+}
 
 /**********************************************************************************************************
   Robot PERCEPTION - all of the sensing
@@ -495,8 +496,6 @@ void MoveServo() {
 void RobotPerception() {
   // This function polls all of the sensors and then assigns sensor outputs
   // that can be used by the robot in subsequent stages
-
-
   
   // Photodiode Sensing
   //Serial.print(getPinVoltage(BUTTON_2)); Serial.print("\t"); //uncomment for debugging
@@ -527,19 +526,26 @@ void RobotPerception() {
     SensedLightDown = DETECTION_NO;
   }
 
-   // Collision Sensor
-   if (isCollision()) {   // Add code in isCollision() function for lab 2 milestone 1
-    SensedCollision = DETECTION_YES;
-   } else {
-    SensedCollision = DETECTION_NO;
-   }
+  // Update the general SensedLight Variable
+  if (SensedLightDown || SensedLightUp || SensedLightLeft || SensedLightRight){
+    SensedLight = DETECTION_YES;
+  } else {
+    SensedLight = DETECTION_NO;
+  }
 
-   // Capacitive Sensor
-   if (isCapacitiveSensorTouched()){
+  // Collision Sensor
+  if (isCollision()) {   // Add code in isCollision() function for lab 2 milestone 1
+    SensedCollision = DETECTION_YES;
+  } else {
+    SensedCollision = DETECTION_NO;
+  }
+
+  // Capacitive Sensor
+  if (isCapacitiveSensorTouched()){
     SensedCapacitiveTouch = DETECTION_YES;
-   } else {
+  } else {
     SensedCapacitiveTouch = DETECTION_NO;
-   }
+  }
 }
 
 /**********************************************************************************************************
@@ -585,7 +591,10 @@ void RobotAction() {
   }
   
   // This calls a function to move the servo
-    MoveServo();       
+  MoveServo();
+  
+  // This calls a function to update the RGB LED
+  updateRgbLed();
 }
 
 
@@ -629,6 +638,57 @@ void fsmCollisionDetection() {
   }
 }
 
+void fsmRgbUpdate(){
+  /*
+    Updates in this function are structured as follows:
+      sensing condition:
+        bounds check (where applicable):
+          LED PWM increment/decrement
+    
+    Bounds checks are necessary because if not present integer overflow
+    will cause the LED to be continuously white.
+  */
+
+  // Check for collision
+  if(SensedCollision){
+    rgbVals.redPwm = 255;
+  } else {
+    if (rgbVals.redPwm > 0){
+      rgbVals.redPwm--;
+    }
+  }
+
+  // Check if the Capacitive Touch Sensor has been touched
+  if(SensedCapacitiveTouch){
+    if(rgbVals.bluePwm < 255){
+      rgbVals.bluePwm++;
+    }
+
+    if(rgbVals.greenPwm > 0){
+      rgbVals.greenPwm--;
+    }
+
+    if(rgbVals.redPwm > 0){
+      rgbVals.redPwm--;
+    }
+  } else {
+    if(rgbVals.bluePwm > 0){
+      rgbVals.bluePwm++;
+    }
+  }
+
+  // Check if light is detected
+  if(SensedLight){
+    if(rgbVals.greenPwm < 255){
+      rgbVals.greenPwm--;
+    }
+  } else {
+    if(rgbVals.greenPwm > 0){
+      rgbVals.greenPwm--;
+    }
+  }
+}
+
 
 /**********************************************************************************************************
   Robot PLANNING - using the sensing to make decisions
@@ -639,6 +699,7 @@ void RobotPlanning(void) {
   fsmCollisionDetection(); // Milestone 1
   fsmMoveServoUpAndDown(); // Milestone 3
   fsmCapacitiveSensorSpeedControl(); // lab 4
+  fsmRgbUpdate();
 }
 
 
