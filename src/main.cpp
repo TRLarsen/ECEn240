@@ -228,6 +228,11 @@ void doTurnLedOff(int led_pin)
   digitalWrite(led_pin, LOW);
 }
 
+// Simple non-blocking timer. Requires user to keep track of start time.
+unsigned long elapsedTime(unsigned long startTime){
+  return (millis() - startTime);
+}
+
 ////////////////////////////////////////////////////////////////////
 // Function to read pin voltage
 ////////////////////////////////////////////////////////////////////
@@ -298,21 +303,21 @@ bool isLight(int pin) {
 ////////////////////////////////////////////////////////////////////
 void fsmSteerRobot() {
   static int steerRobotState = 0;
+  static unsigned long timerStartTime;
   //Serial.print(steerRobotState); Serial.print("\t"); //uncomment for debugging
 
   switch (steerRobotState) {
     case 0: //light is not detected
-      if(ActionRobotDrive != DRIVE_STOP){
-        ActionRobotDrive = DRIVE_STOP;
-      } else {
-        ActionRobotDrive = DRIVE_STOP;
-      }
+      ActionRobotDrive = DRIVE_STOP;
       
       //State transition logic
       if ( SensedLightLeft == DETECTION_YES ) {
         steerRobotState = 1; //if light on left of robot, go to left state
       } else if ( SensedLightRight == DETECTION_YES ) {
         steerRobotState = 2; //if light on right of robot, go to right state
+      } else if ( SensedLight == DETECTION_NO ){
+        steerRobotState = 4;
+        timerStartTime = millis();
       }
       break;
     
@@ -354,6 +359,23 @@ void fsmSteerRobot() {
       }
       
       break;
+
+    case 4: // Search mode
+
+      if(((elapsedTime(timerStartTime) / 1000) % 2) == 1){
+        steerRobotState = DRIVE_RIGHT;
+      } else {
+        steerRobotState = DRIVE_LEFT;
+      }
+
+      //State transition logic
+      if ( SensedLightLeft == DETECTION_YES ) {
+        steerRobotState = 1; //if light on left of robot, go to left state
+      } else if ( SensedLightRight == DETECTION_YES ) {
+        steerRobotState = 2; //if light on right of robot, go to right state
+      }
+
+      break;
       
     default: // error handling
     {
@@ -369,6 +391,7 @@ void fsmSteerRobot() {
 void fsmMoveServoUpAndDown() {
   // Note that the a lower angle is towards the back of the robot
   static int moveServoState = 0;
+  static unsigned long timerStartTime;
   //Serial.print(moveServoState); Serial.print("\t"); //uncomment for debugging
   
   // Milestone 3
@@ -387,6 +410,9 @@ void fsmMoveServoUpAndDown() {
         moveServoState = 1; //if light above the robot, go to above state
       } else if ( SensedLightDown == DETECTION_YES && SensedLightUp == DETECTION_NO) {
         moveServoState = 2; //if light is below the robot, go to below state
+      } else if ( SensedLight == DETECTION_NO ){
+        moveServoState = 3;
+        timerStartTime = millis();
       }
       break;
     
@@ -408,6 +434,22 @@ void fsmMoveServoUpAndDown() {
       //State transition logic
       if ( (SensedLightUp == DETECTION_YES)  || (SensedLightDown == DETECTION_NO) ) {
         moveServoState = 0; //if light is above and below, or no longer visible don't move
+      }
+
+      break;
+
+    case 3: // Search mode
+      if(((elapsedTime(timerStartTime) / 300) % 2) == 1 && ActionRobotSpeed != SPEED_STOP){
+        ActionServoMove = SERVO_MOVE_DOWN;
+      } else {
+        ActionServoMove = SERVO_MOVE_UP;
+      }
+
+      //State transition logic
+      if ( SensedLightUp == DETECTION_YES && SensedLightDown == DETECTION_NO ) {
+        moveServoState = 1; //if light above the robot, go to above state
+      } else if ( SensedLightDown == DETECTION_YES && SensedLightUp == DETECTION_NO) {
+        moveServoState = 2; //if light is below the robot, go to below state
       }
 
       break;
